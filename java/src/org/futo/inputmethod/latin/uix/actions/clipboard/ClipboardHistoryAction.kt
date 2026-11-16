@@ -104,6 +104,8 @@ import org.futo.inputmethod.latin.uix.actions.BugViewerAction
 import org.futo.inputmethod.latin.uix.actions.BugViewerState
 import org.futo.inputmethod.latin.uix.actions.PasteAction
 import org.futo.inputmethod.latin.uix.actions.fonttyper.SuperheroRenderer
+import org.futo.inputmethod.latin.uix.actions.reactions.ReactionStore
+import org.futo.inputmethod.latin.uix.actions.reactions.ReactionsAction
 import org.futo.inputmethod.latin.uix.actions.throwIfDebug
 import org.futo.inputmethod.latin.uix.getSetting
 import org.futo.inputmethod.latin.uix.getSettingBlocking
@@ -248,7 +250,7 @@ object ClipboardThumbCache {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ClipboardEntryView(modifier: Modifier, clipboardEntry: ClipboardEntry, onPaste: (ClipboardEntry) -> Unit, onRemove: (ClipboardEntry) -> Unit, onPin: (ClipboardEntry) -> Unit, bitmapOverride: ImageBitmap? = null) {
+fun ClipboardEntryView(modifier: Modifier, clipboardEntry: ClipboardEntry, onPaste: (ClipboardEntry) -> Unit, onRemove: (ClipboardEntry) -> Unit, onPin: (ClipboardEntry) -> Unit, bitmapOverride: ImageBitmap? = null, onSaveReaction: ((ClipboardEntry) -> Unit)? = null) {
     val context = LocalContext.current
 
     val bitmap = remember(clipboardEntry) {
@@ -360,6 +362,19 @@ fun ClipboardEntryView(modifier: Modifier, clipboardEntry: ClipboardEntry, onPas
                 }
 
                 Spacer(modifier = Modifier.weight(1.0f))
+
+                if(bitmap != null && onSaveReaction != null) {
+                    IconButton(onClick = {
+                        onSaveReaction(clipboardEntry)
+                    }, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            painterResource(id = R.drawable.sticker),
+                            contentDescription = stringResource(R.string.action_clipboard_manager_save_as_reaction),
+                            tint = contentColorFor(color),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
 
                 IconButton(onClick = {
                     onRemove(clipboardEntry)
@@ -1306,6 +1321,14 @@ val ClipboardHistoryAction = Action(
                                     }, onPin = {
                                         clipboardHistoryManager.onTogglePin(it)
                                         manager.performHapticAndAudioFeedback(Constants.CODE_TAB, view)
+                                    }, onSaveReaction = {
+                                        val file = it.getFile(context) ?: return@ClipboardEntryView
+                                        val mimeType = it.mimeTypes.firstOrNull() ?: return@ClipboardEntryView
+                                        manager.getLifecycleScope().launch {
+                                            val reaction = ReactionStore.addFile(context, file, mimeType) ?: return@launch
+                                            ReactionStore.pendingEdit.value = reaction.file
+                                            manager.activateAction(ReactionsAction)
+                                        }
                                     })
                             }
                         }
