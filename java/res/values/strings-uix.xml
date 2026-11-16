@@ -102,6 +102,24 @@
     <string name="action_clipboard_manager_settings_skip_delete_confirmation">Skip confirmation when deleting unpinned clips</string>
 
     <string name="action_clipboard_manager_settings_show_quick_clips">Show recently copied text in suggestion bar</string>
+    <string name="action_clipboard_manager_save_as_reaction">Save as reaction</string>
+
+    <!-- For reactions action -->
+    <string name="action_reactions_title">Reactions</string>
+    <string name="action_reactions_search">Search reactions</string>
+    <string name="action_reactions_enter_your_search">Search labels</string>
+    <string name="action_reactions_label_placeholder">Label, e.g. this is fine dog</string>
+    <string name="action_reactions_done">Done</string>
+    <string name="action_reactions_remove">Remove reaction</string>
+    <string name="action_reactions_remove_confirm">Remove this reaction?</string>
+    <string name="action_reactions_cancel">Cancel</string>
+    <string name="action_reactions_empty">No reactions yet. Copy an image and tap its sticker icon in Clipboard Manager, or import images in settings. Long-press a reaction to label it.</string>
+    <string name="action_reactions_no_results">No reactions found</string>
+    <string name="action_reactions_device_locked">Unlock your device to use reactions</string>
+    <string name="action_reactions_settings_title">Reactions</string>
+    <string name="action_reactions_settings_import">Import images</string>
+    <string name="action_reactions_settings_import_subtitle">Add images from your gallery, then long-press each one in the keyboard to label it</string>
+    <string name="action_reactions_settings_count">%d reactions saved</string>
 
     <!-- For keyboard modes action -->
     <string name="action_keyboard_modes_title">Keyboard Modes</string>
