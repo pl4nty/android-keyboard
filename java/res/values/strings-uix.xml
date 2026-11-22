@@ -102,6 +102,36 @@
     <string name="action_clipboard_manager_settings_skip_delete_confirmation">Skip confirmation when deleting unpinned clips</string>
 
     <string name="action_clipboard_manager_settings_show_quick_clips">Show recently copied text in suggestion bar</string>
+    <string name="action_clipboard_manager_save_as_reaction">Save as reaction</string>
+
+    <!-- For reactions action -->
+    <string name="action_reactions_title">Reactions</string>
+    <string name="action_reactions_search">Search reactions</string>
+    <string name="action_reactions_enter_your_search">Search labels</string>
+    <string name="action_reactions_label_placeholder">Label, e.g. this is fine dog</string>
+    <string name="action_reactions_done">Done</string>
+    <string name="action_reactions_remove">Remove reaction</string>
+    <string name="action_reactions_remove_confirm">Remove this reaction?</string>
+    <string name="action_reactions_cancel">Cancel</string>
+    <string name="action_reactions_empty">No reactions yet. Share an image to Save to Reactions, copy one and tap its sticker icon in Clipboard Manager, or import images in settings. Long-press a reaction to label it.</string>
+    <string name="action_reactions_no_results">No reactions found</string>
+    <string name="action_reactions_device_locked">Unlock your device to use reactions</string>
+    <string name="action_reactions_settings_title">Reactions</string>
+    <string name="action_reactions_settings_import">Import images</string>
+    <string name="action_reactions_settings_import_subtitle">Add images from your gallery, then long-press each one in the keyboard to label it</string>
+    <string name="action_reactions_settings_count">%d reactions saved</string>
+    <string name="action_reactions_share_label">Save to Reactions</string>
+    <string name="action_reactions_search_klipy">Search KLIPY</string>
+    <string name="action_reactions_klipy_trending">Trending on KLIPY · hold to save</string>
+    <string name="action_reactions_klipy_results">From KLIPY · hold to save</string>
+    <string name="action_reactions_settings_klipy_key">KLIPY API key</string>
+    <string name="action_reactions_settings_klipy_key_placeholder">Paste your app key</string>
+    <string name="action_reactions_settings_klipy_key_subtitle">Shows KLIPY memes beside your reactions. Create a free key at partner.klipy.com. Searches are sent to KLIPY.</string>
+    <string name="action_reactions_share_failed">Couldn\'t save this image as a reaction</string>
+    <plurals name="action_reactions_share_saved">
+        <item quantity="one">Saved to Reactions</item>
+        <item quantity="other">Saved %d images to Reactions</item>
+    </plurals>
 
     <!-- For keyboard modes action -->
     <string name="action_keyboard_modes_title">Keyboard Modes</string>
