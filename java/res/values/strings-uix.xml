@@ -121,6 +121,12 @@
     <string name="action_reactions_settings_import_subtitle">Add images from your gallery, then long-press each one in the keyboard to label it</string>
     <string name="action_reactions_settings_count">%d reactions saved</string>
     <string name="action_reactions_share_label">Save to Reactions</string>
+    <string name="action_reactions_search_klipy">Search KLIPY</string>
+    <string name="action_reactions_klipy_trending">Trending on KLIPY · hold to save</string>
+    <string name="action_reactions_klipy_results">From KLIPY · hold to save</string>
+    <string name="action_reactions_settings_klipy_key">KLIPY API key</string>
+    <string name="action_reactions_settings_klipy_key_placeholder">Paste your app key</string>
+    <string name="action_reactions_settings_klipy_key_subtitle">Shows KLIPY memes beside your reactions. Create a free key at partner.klipy.com. Searches are sent to KLIPY.</string>
     <string name="action_reactions_share_failed">Couldn\'t save this image as a reaction</string>
     <plurals name="action_reactions_share_saved">
         <item quantity="one">Saved to Reactions</item>

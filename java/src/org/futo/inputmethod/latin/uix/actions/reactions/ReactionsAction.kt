@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,16 +32,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
@@ -53,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.core.util.AtomicFile
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -76,9 +81,11 @@ import org.futo.inputmethod.latin.uix.actions.clipboard.ClipboardUtil
 import org.futo.inputmethod.latin.uix.actions.throwIfDebug
 import org.futo.inputmethod.latin.uix.settings.NavigationItem
 import org.futo.inputmethod.latin.uix.settings.NavigationItemStyle
+import org.futo.inputmethod.latin.uix.settings.SettingTextField
 import org.futo.inputmethod.latin.uix.settings.Tip
 import org.futo.inputmethod.latin.uix.settings.UserSetting
 import org.futo.inputmethod.latin.uix.settings.UserSettingsMenu
+import org.futo.inputmethod.latin.uix.settings.useDataStoreValue
 import org.futo.inputmethod.latin.uix.theme.Typography
 import java.io.File
 import java.io.InputStream
@@ -246,6 +253,26 @@ private fun ReactionView(reaction: Reaction, onSend: () -> Unit, onEdit: () -> U
         }
     }
 
+    ReactionTile(bitmap, reaction.label, reaction.label, onSend, onEdit)
+}
+
+@Composable
+private fun KlipyView(meme: KlipyMeme, onSend: () -> Unit, onSave: () -> Unit) {
+    val bitmap by produceState<ImageBitmap?>(null, meme.slug) {
+        value = meme.preview?.let { Klipy.thumbnail(it.url) }
+    }
+
+    ReactionTile(bitmap, meme.title, "", onSend, onSave)
+}
+
+@Composable
+private fun ReactionTile(
+    bitmap: ImageBitmap?,
+    description: String,
+    label: String,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
@@ -254,20 +281,20 @@ private fun ReactionView(reaction: Reaction, onSend: () -> Unit, onEdit: () -> U
             .padding(2.dp)
             .aspectRatio(1.0f)
             .clip(RoundedCornerShape(8.dp))
-            .combinedClickable(onClick = onSend, onLongClick = onEdit)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         Box {
             if(bitmap != null) {
-                Image(bitmap, contentDescription = reaction.label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                Image(bitmap, contentDescription = description, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             }
-            if(reaction.label.isNotEmpty()) {
+            if(label.isNotEmpty()) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.6f),
                     contentColor = Color.White,
                     modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 ) {
                     Text(
-                        reaction.label,
+                        label,
                         style = Typography.SmallMl,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -352,8 +379,12 @@ val ReactionsAction = Action(
                 }
 
                 if(searching.value) {
-                    ActionHeaderSearch(searchText, Modifier.weight(1.0f),
-                        placeholder = stringResource(R.string.action_reactions_enter_your_search))
+                    val placeholder = if(useDataStoreValue(KlipyApiKey).isEmpty()) {
+                        R.string.action_reactions_enter_your_search
+                    } else {
+                        R.string.action_reactions_search_klipy
+                    }
+                    ActionHeaderSearch(searchText, Modifier.weight(1.0f), placeholder = stringResource(placeholder))
                     return
                 }
 
@@ -378,13 +409,23 @@ val ReactionsAction = Action(
                 LaunchedEffect(Unit) { ReactionStore.load(context) }
                 if(!ReactionStore.loaded.value) return
 
-                if(ReactionStore.reactions.isEmpty()) {
+                val klipyKey = useDataStoreValue(KlipyApiKey)
+                val query = if(searching.value) searchText.value else ""
+                val memes = remember { mutableStateListOf<KlipyMeme>() }
+                LaunchedEffect(klipyKey, query) {
+                    memes.clear()
+                    if(klipyKey.isEmpty()) return@LaunchedEffect
+                    delay(400L)
+                    memes.addAll(Klipy.memes(context, klipyKey, query))
+                }
+
+                if(ReactionStore.reactions.isEmpty() && klipyKey.isEmpty()) {
                     Tip(stringResource(R.string.action_reactions_empty))
                     return
                 }
 
-                val results = ReactionStore.search(if(searching.value) searchText.value else "")
-                if(results.isEmpty()) {
+                val results = ReactionStore.search(query)
+                if(results.isEmpty() && klipyKey.isEmpty()) {
                     Text(
                         stringResource(R.string.action_reactions_no_results),
                         style = Typography.Body.Medium.copy(fontStyle = FontStyle.Italic),
@@ -395,6 +436,19 @@ val ReactionsAction = Action(
                     return
                 }
 
+                fun send(file: File, mimeType: String) {
+                    val request = ClipboardProviderState.addRequest(
+                        ClipboardPasteRequest(
+                            file = file,
+                            mimeType = mimeType,
+                            expiration = System.currentTimeMillis() + 5L * 60L * 1000L
+                        )
+                    )
+                    val uri = "content://${CLIPBOARD_AUTHORITY}/clip/$request".toUri()
+                    manager.typeUri(uri, listOf(mimeType), true)
+                    manager.performHapticAndAudioFeedback(Constants.CODE_OUTPUT_TEXT, view)
+                }
+
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(88.dp),
                     modifier = Modifier.fillMaxWidth()
@@ -403,16 +457,7 @@ val ReactionsAction = Action(
                         ReactionView(
                             reaction = reaction,
                             onSend = {
-                                val request = ClipboardProviderState.addRequest(
-                                    ClipboardPasteRequest(
-                                        file = File(context.reactionsDir, reaction.file),
-                                        mimeType = reaction.mimeType,
-                                        expiration = System.currentTimeMillis() + 5L * 60L * 1000L
-                                    )
-                                )
-                                val uri = "content://${CLIPBOARD_AUTHORITY}/clip/$request".toUri()
-                                manager.typeUri(uri, listOf(reaction.mimeType), true)
-                                manager.performHapticAndAudioFeedback(Constants.CODE_OUTPUT_TEXT, view)
+                                send(File(context.reactionsDir, reaction.file), reaction.mimeType)
                                 manager.getLifecycleScope().launch { ReactionStore.markUsed(context, reaction.file) }
                             },
                             onEdit = {
@@ -420,6 +465,42 @@ val ReactionsAction = Action(
                                 manager.performHapticAndAudioFeedback(Constants.CODE_TAB, view)
                             }
                         )
+                    }
+
+                    if(klipyKey.isNotEmpty()) {
+                        item(key = "klipy", span = { GridItemSpan(maxLineSpan) }) {
+                            Text(
+                                stringResource(
+                                    if(query.isBlank()) R.string.action_reactions_klipy_trending
+                                    else R.string.action_reactions_klipy_results
+                                ),
+                                style = Typography.SmallMl,
+                                color = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(4.dp, 8.dp, 4.dp, 4.dp)
+                            )
+                        }
+
+                        items(memes, key = { "klipy/${it.slug}" }) { meme ->
+                            KlipyView(
+                                meme = meme,
+                                onSend = {
+                                    manager.getLifecycleScope().launch {
+                                        val file = Klipy.download(context, meme) ?: return@launch
+                                        send(file, "image/png")
+                                        Klipy.share(context, klipyKey, meme, query)
+                                    }
+                                },
+                                onSave = {
+                                    manager.performHapticAndAudioFeedback(Constants.CODE_TAB, view)
+                                    manager.getLifecycleScope().launch {
+                                        val file = Klipy.download(context, meme) ?: return@launch
+                                        val reaction = ReactionStore.addFile(context, file, "image/png") ?: return@launch
+                                        startEditing(reaction)
+                                        if(labelText.value.isEmpty()) labelText.value = meme.title
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -454,6 +535,18 @@ val ReactionsAction = Action(
                             launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         }
                     )
+                }
+            ),
+            UserSetting(
+                name = R.string.action_reactions_settings_klipy_key,
+                subtitle = R.string.action_reactions_settings_klipy_key_subtitle,
+                component = {
+                    SettingTextField(
+                        title = stringResource(R.string.action_reactions_settings_klipy_key),
+                        placeholder = stringResource(R.string.action_reactions_settings_klipy_key_placeholder),
+                        field = KlipyApiKey
+                    )
+                    Tip(stringResource(R.string.action_reactions_settings_klipy_key_subtitle))
                 }
             ),
         )
