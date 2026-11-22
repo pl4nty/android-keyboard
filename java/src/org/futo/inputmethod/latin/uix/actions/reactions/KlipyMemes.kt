@@ -23,7 +23,7 @@ val KlipyApiKey = SettingsKey(stringPreferencesKey("klipy_api_key"), "")
 private val KlipyCustomerId = SettingsKey(stringPreferencesKey("klipy_customer_id"), "")
 
 @Serializable
-data class KlipyMedia(val url: String)
+data class KlipyMedia(val url: String, val width: Int = 0)
 
 @Serializable
 data class KlipySize(val png: KlipyMedia? = null, val webp: KlipyMedia? = null)
@@ -44,7 +44,7 @@ data class KlipyMeme(
     val file: KlipyFiles? = null,
 ) {
     val preview get() = file?.sm?.webp ?: file?.sm?.png ?: file?.md?.webp ?: file?.md?.png
-    val full get() = file?.hd?.png ?: file?.md?.png ?: file?.sm?.png
+    val full get() = listOfNotNull(file?.hd?.png, file?.md?.png, file?.sm?.png).maxByOrNull { it.width }
 }
 
 @Serializable
